@@ -41,19 +41,20 @@ def hover_sequence(scf):
         take_off(scf)
         land(scf)
         
-def flocking(scf,sequence):
-    objet=sequence[scf.cf.link_uri]
+def flocking(scf):
+    objet=dico_boid[scf.cf.link_uri]
     print(f"objet:{objet}")
+    
     
 
 
 def store_pos(scf, dict_pos):
     while True:
-        dict_pos[] = swarm.get_estimated_positions()
+        dict_pos = swarm.get_estimated_positions()
         print(f"dico : {dict_pos}")
         time.sleep(0.2)
                
-seq_args = {}
+dico_boid = {}
 dict_pos = {}
 
 
@@ -63,11 +64,11 @@ uris = {
     # Add more URIs if you want more copters in the swarm
 }
 
-for i in range(len(uris)):
-    seq_args[uris[i]] = Boid(0, 0)
+for i in uris:
+    dico_boid[i] = Boid(0, 0)
 
 
-print(seq_args)
+print(dico_boid)
 
 
 if __name__ == '__main__':
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         swarm.parallel_safe(take_off)
         time.sleep(3)
         Thread(target=store_pos,args=swarm).start()
-        swarm.parallel_safe(flocking,args_dict=seq_args)
+        swarm.parallel_safe(flocking)
         time.sleep(3)
         swarm.parallel_safe(land)
         
