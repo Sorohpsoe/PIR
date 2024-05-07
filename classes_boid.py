@@ -17,7 +17,7 @@ class Boid:
         self.position = vec2(x, y)
         self.target_position = vec2(x, y)
         self.r = 2.0
-        self.max_velocity = 2
+        self.max_velocity = 0.2
         self.max_acceleration = 0.03
 
     def seek(self, target):
@@ -28,17 +28,12 @@ class Boid:
         steer = steer.limited(self.max_acceleration)
         return steer
 
-    # Wraparound
-    def borders(self):
-        x, y = self.position
-        x = (x+self.width) % self.width
-        y = (y+self.height) % self.height
-        self.position = vec2(x,y)
+
 
     # Separation
     # Method checks for nearby boids and steers away
     def separate(self, boids):
-        desired_separation = 25.0
+        desired_separation = 0.5
         steer = vec2(0, 0)
         count = 0
 
@@ -71,7 +66,7 @@ class Boid:
     # Alignment
     # For every nearby boid in the system, calculate the average velocity
     def align(self, boids):
-        neighbor_dist = 50
+        neighbor_dist = 1
         sum = vec2(0, 0)
         count = 0
         for other in boids:
@@ -95,7 +90,7 @@ class Boid:
     # For the average position (i.e. center) of all nearby boids, calculate
     # steering vector towards that position
     def cohesion(self, boids):
-        neighbor_dist = 50
+        neighbor_dist = 1
         sum = vec2(0, 0)  # Start with empty vector to accumulate all positions
         count = 0
         for other in boids:
@@ -136,7 +131,7 @@ class Boid:
     def run(self, boids):
         self.flock(boids)
         self.update()
-        self.borders()
+
 
 
 class Flock:
