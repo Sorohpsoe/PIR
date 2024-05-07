@@ -7,6 +7,7 @@ from cflib.crazyflie.swarm import Swarm
 from cflib.crazyflie.syncLogger import SyncLogger
 
 from classes_boid import Boid
+from vec2 import vec2
 
 
 
@@ -53,6 +54,7 @@ def store_pos(scf, dict_pos):
         dict_pos = swarm.get_estimated_positions()
         print(f"dico : {dict_pos}")
         time.sleep(0.2)
+        dico_boid[scf.cf.link_uri].position = vec2(dict_pos[scf.cf.link_uri].x, dict_pos[scf.cf.link_uri].y)
                
 dico_boid = {}
 dict_pos = {}
