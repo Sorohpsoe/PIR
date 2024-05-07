@@ -35,8 +35,27 @@ def hover_sequence(scf):
     take_off(scf)
     land(scf)
 
+def run_square_sequence(scf):
+    box_size = 1
+    flight_time = 2
+
+    commander= scf.cf.high_level_commander
+
+    commander.go_to(box_size, 0, 0, 0, flight_time, relative=True)
+    time.sleep(flight_time)
+
+    commander.go_to(0, box_size, 0, 0, flight_time, relative=True)
+    time.sleep(flight_time)
+
+    commander.go_to(-box_size, 0, 0, 0, flight_time, relative=True)
+    time.sleep(flight_time)
+
+    commander.go_to(0, -box_size, 0, 0, flight_time, relative=True)
+    time.sleep(flight_time)
+
 uris = {
     'radio://0/80/2M/3',
+    'radio://0/80/2M/6',
     # Add more URIs if you want more copters in the swarm
 }
 
@@ -48,4 +67,6 @@ if __name__ == '__main__':
         swarm.parallel_safe(light_check)
         swarm.reset_estimators()
 
-        swarm.sequential(hover_sequence)
+        swarm.parallel_safe(take_off)
+        swarm.parallel_safe(run_square_sequence)
+        swarm.parallel_safe(land)
