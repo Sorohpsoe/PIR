@@ -66,7 +66,7 @@ class Boid:
     # Alignment
     # For every nearby boid in the system, calculate the average velocity
     def align(self, boids):
-        neighbor_dist = 1
+        neighbor_dist = 10
         sum = vec2(0, 0)
         count = 0
         for other in boids:
@@ -90,7 +90,7 @@ class Boid:
     # For the average position (i.e. center) of all nearby boids, calculate
     # steering vector towards that position
     def cohesion(self, boids):
-        neighbor_dist = 1
+        neighbor_dist = 10
         sum = vec2(0, 0)  # Start with empty vector to accumulate all positions
         count = 0
         for other in boids:
@@ -110,7 +110,7 @@ class Boid:
         coh = self.cohesion(boids)  # Cohesion
 
         # Arbitrarily weight these forces
-        sep *= 1.5
+        sep *= 1.0
         ali *= 1.0
         coh *= 1.0
 

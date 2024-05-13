@@ -1,7 +1,7 @@
+import cflib.crtp
 import time
 import math
 from threading import Thread
-import cflib.crtp
 from cflib.crazyflie.swarm import CachedCfFactory
 from cflib.crazyflie.swarm import Swarm
 from cflib.positioning.motion_commander import MotionCommander
@@ -11,6 +11,8 @@ from cflib.crazyflie import commander
 
 from classes_boid import Boid
 from vec2 import vec2
+import csv
+import os
 
 
 
@@ -48,26 +50,38 @@ def hover_sequence(scf):
 def flocking(scf):
 
     boids = dico_boid.values()
+    print(f"boids : {boids}")
+    
     objet=dico_boid[scf.cf.link_uri]
+    print(f"objet : {objet}")
 
     while True :
 
-        if scf.cf.link_uri != 'radio://0/80/2M/3' :
+        if scf.cf.link_uri != 'radio://0/80/2M/7' :
     
             objet.run(boids)
 
             x = objet.velocity.x
             y = objet.velocity.y
+            
+            with open('velocity.csv', 'a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow([x, y])
 
-            print(x,y)
 
-            #with MotionCommander(scf, default_height=1) as mc :
-                #mc.start_linear_motion(x, y, 0)
-                #time.sleep(0.2)
-                #mc.stop()
+            print(f"velocity : {x,y}")
+
+            with MotionCommander(scf, default_height=1) as mc :
+                mc.start_linear_motion(x, y, 0)
+                time.sleep(0.1)
+                mc.stop()
         
-            cf=scf.cf
-            cf.commander.send_position_setpoint(x,y,0.5,0)
+            #cf=scf.cf
+            
+            #cf.commander.send_position_setpoint(x,y,0.5,0)
+            
+            #cf.commander.send_velocity_world_setpoint(x,y,0,0)
+            print(f"uri : {scf.cf.link_uri} velocity : {x,y}")
 
 
         else :
@@ -86,8 +100,6 @@ def flocking(scf):
 
 
 
-    
-
 
 def store_pos():
     while True:
@@ -96,7 +108,11 @@ def store_pos():
         time.sleep(0.1)
         for uri in uris:
             dico_boid[uri].position = vec2(dict_pos[uri].x, dict_pos[uri].y)
-               
+            
+            with open('positions.csv', 'a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow([uri, dict_pos[uri].x, dict_pos[uri].y])
+            
 dico_boid = {}
 dict_pos = {}
 
@@ -104,8 +120,8 @@ BOX_LIMIT = 2
 max_vel = 0.2
 
 uris = {
-    'radio://0/80/2M/3',
-    'radio://0/80/2M/6',
+    'radio://0/80/2M/5',
+    'radio://0/80/2M/7',
     # Add more URIs if you want more copters in the swarm
 }
 
@@ -113,11 +129,19 @@ for i in uris:
     dico_boid[i] = Boid(0, 0)
 
 
-print(dico_boid)
+print(f"dico_boid : {dico_boid}")
 
 
 if __name__ == '__main__':
+    # Reset the velocity.csv file
+    with open('velocity.csv', 'w', newline='') as file:
+        pass
+
+    # Reset the positions.csv file
+    with open('positions.csv', 'w', newline='') as file:
+        pass
     cflib.crtp.init_drivers()
+    print('Scanning interfaces for Crazyflies...')
     factory = CachedCfFactory(rw_cache='./cache')
     with Swarm(uris, factory=factory) as swarm:
         print('Connected to Crazyflies')
