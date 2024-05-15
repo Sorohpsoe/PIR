@@ -70,16 +70,9 @@ def start_distance_printing(scf):
 
 
 uris = [
-    'radio://0/80/2M/3',
-    'radio://0/80/2M/A',
-    'radio://0/80/2M/7',
+    'radio://0/80/2M/9',
+    'radio://0/80/2M/2',
 ]
-
-seq_args = {
-    uris[0]: [0],
-    uris[1]: [1],
-    uris[2]: [1],
-}
 
 def is_in_box_limit(box_limits, positions, whichCF, v_0):
 
@@ -142,90 +135,124 @@ def seek(self, positions, velocities, whichCF, target):
         steer = steer.limited(self.max_acceleration)
         return steer
 
+def length(vect):
+    return math.hypot(vect[0], vect[1], vect[2])
 
+def normalized(vect):
+    length = length(vect)
+    if not length:
+        length = 1.0
+    return vect/length
 
 # Separation
 # Method checks for nearby boids and steers away
-def separate(positions,velocities, wichCF,):
-    desired_separation = 0.5
-    steer = vec2(0, 0)
+def separate(positions, whichCF, r_rep, p_rep):
+    desired_separation = r_rep
     count = 0
+    
+    repulsion_force = np.zeros(3)
 
     # For every boid in the system, check if it's too close
-    for i in positions.keys():
-        if i == wichCF:
-            continue
-        
-        d = (positions[wichCF] - positions[i]).length()
-        # If the distance is greater than 0 and less than an arbitrary
-        # amount (0 when you are yourself)
-        if d < desired_separation:
-            # Calculate vector pointing away from neighbor
-            diff = positions[wichCF] - positions[i]
-            diff = diff.normalized()
-            steer += diff/d  # Weight by distance
-            count += 1       # Keep track of how many
-
-    # Average - divide by how many
-    if count > 0:
-        steer /= count
-
-    # As long as the vector is greater than 0
-    if steer.length() > 0:
-        # Implement Reynolds: Steering = Desired - Velocity
-        steer = steer.normalized()
-        steer *= max_velocity
-        steer -= velocities[wichCF]
-        steer = steer.limited(max_acceleration)
-
-    return steer
-
-def align(positions, wichCF):
-
-        neighbor_dist = 10
-        sum = vec2(0, 0)
-        count = 0
-        for i in positions.keys():
-            if i == wichCF:
-                continue
-            
-            d =    (positions[wichCF] - positions[i]).length()
-            if d < neighbor_dist:
-                sum += other.velocity
-                count += 1
-
-        if count > 0:
-            sum /= count
-            # Implement Reynolds: Steering = Desired - Velocity
-            sum = sum.normalized()
-            sum *= max_velocity
-            steer = self.velocity
-            steer = steer.limited(max_acceleration)
-            return steer
-        else:
-            return vec2(0, 0)
-        
-        
-    
-def cohesion(positions, whichCF):
-    neighbor_dist = 10
-    sum = vec2(0, 0)  # Start with empty vector to accumulate all positions
-    count = 0
     for i in positions.keys():
         if i == whichCF:
             continue
         
-        d = (positions[whichCF] - positions[i]).length()
         
-        if d < neighbor_dist:
-            sum +=positions[i]  # Add position
-            count += 1
-    if count > 0:
-        sum /= count
-        return seek(sum)
-    else:
-        return vec2(0, 0)
+        neighbor_pos_diff = positions[i] - positions[whichCF]
+        diff=normalized(neighbor_pos_diff)
+        d = length(neighbor_pos_diff)
 
+        if d > desired_separation:
+            continue
+
+        count += 1
+
+        #repulsion_force += ((r_rep - d) * p_rep * (maths.unitVect(neighbor_pos_diff)))
+        repulsion_force+=diff/d
+        repulsion_force = repulsion_force*p_rep
+        
+    
+    # strg = np.linalg.norm(repulsion_force)
+    # if strg !=0:
+    #     print("Repulsion vector of {} is x:{} y:{} z:{} and strength is {}".format(whichCF, repulsion_force[0], repulsion_force[1], repulsion_force[2], strg))
+
+    return repulsion_force
+
+def align(positions, velocities, whichCF,rayon, p_align ):
+            
+    pos = positions[whichCF]
+    vel = velocities[whichCF]
+    alignment_force = np.zeros(3)
+    count=0
+
+    for i in positions.keys():
+        if i == whichCF:
+            continue
+        
+        neighbor_pos_diff = positions[i] - positions[whichCF]
+        distance  = length(neighbor_pos_diff)
+        """
+        neighbor_vel_diff = velocities[i] - velocities[whichCF]
+        speed = np.linalg.norm(neighbor_vel_diff)
+        unit_vect = maths.unitVect(neighbor_vel_diff)
+        maxVelDiff = max(V_frict_l,maths.VelDecayLinSqrt(distance, p_l, Acc_l,speed, R_0_l))
+        if speed > maxVelDiff:
+            unit_vect *= (C_frict_l * (speed - maxVelDiff))
+            alignment_force += unit_vect
+            
+        """
+        if distance < rayon:
+            alignment_force += velocities[i]
+            count+=1
+    alignment_force /= count
+    
+    return alignment_force*p_align
+    
+        
+    
+def cohesion(positions, whichCF, r_att, p_att):
+    attraction_force = np.zeros(3)
+    interacting_units = 0
+    sum = np.zeros(3)
+
+    for i in positions.keys():
+
+        if i == whichCF: 
+            continue
+
+        neighbor_pos_diff = positions[i] - positions[whichCF]
+        distance  = length(neighbor_pos_diff)
+
+        print(distance)
+
+        if distance > r_att : 
+            continue
+
+        interacting_units += 1
+        sum+=positions[i]
+        
+    if interacting_units > 0:
+        sum /= interacting_units
+        attraction_force = seek(sum)    
+        
+    attraction_force += ((distance - r_att) * p_att * (maths.unitVect(neighbor_pos_diff)))
+
+    if sum >0 :
+        sum /= interacting_units
+        desired = sum - positions[whichCF]
+        desired = desired.normalized()
+        desired *= p_att
+        attraction_force = desired
+        
+    else:
+        attraction_force = np.zeros(3)
+        
+    
+    # strg = np.linalg.norm(attraction_force)
+    # if strg != 0:
+    #     print("Attraction vector of {} is x:{} y:{} z:{} and strength is {}".format(whichCF, attraction_force[0], attraction_force[1], attraction_force[2], strg))
+    print(attraction_force)
+    return attraction_force
 
 
 def run_sequence(scf, sequence):
@@ -244,7 +271,7 @@ def run_sequence(scf, sequence):
         print(sequence)
 
 
-        if sequence == 0:   
+        if scf.cf.link_uri == uris[0]:   
             with PositionHlCommander(cf, default_velocity=0.2, controller=PositionHlCommander.CONTROLLER_PID) as pc:
 
                 """for i in [0,0.5,1]:
@@ -269,12 +296,24 @@ def run_sequence(scf, sequence):
                 #going_back = is_in_box_limit(box_limits, pos_dict, scf.cf.link_uri, v_0)
 
                 #if all(el == 0 for el in going_back):
-                att = interactions.compute_attraction_force(pos_dict, scf.cf.link_uri, 0.35, 0.5, False)
-                rep = interactions.compute_repulsion_force(pos_dict, scf.cf.link_uri, 0.40, 1, False)
+                r_att=1.5
+                p_att=0.5
+                
+                r_rep=0.4
+                p_rep=0.8
+                
+                
+                r_align=1.0
+                p_align=0.5
+                
+                coef_vitesse=1.0
+                
+                att = cohesion(pos_dict, scf.cf.link_uri, r_att,p_att)
+                rep = separate(pos_dict, scf.cf.link_uri, r_rep, p_rep)
                 spp = interactions.compute_self_propulsion(vel_dict, scf.cf.link_uri, v_0)
-                ali = interactions.compute_friction_alignment(pos_dict, vel_dict, 0.8, 0.2, 1, 5, 0.6, scf.cf.link_uri)
+                ali = align(pos_dict, vel_dict,scf.cf.link_uri,r_align, p_align)
 
-                force = att + rep + ali
+                force = (att + rep + ali)*coef_vitesse
 
                 cf.commander.send_velocity_world_setpoint(force[0], force[1], force[2], 0)
                 time.sleep(0.1)
@@ -295,11 +334,11 @@ if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
     factory = CachedCfFactory(rw_cache='./cache')
-
+    print('Connecting to Crazyflies...')
     with Swarm(uris, factory=factory) as swarm:
         print('Connected to  Crazyflies')
         swarm.reset_estimators()
         print('Estimators have been reset')
         swarm.parallel_safe(start_states_log)
         print('Logging states info...')
-        swarm.parallel_safe(run_sequence, args_dict=seq_args)
+        swarm.parallel_safe(run_sequence)
