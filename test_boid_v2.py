@@ -132,13 +132,13 @@ def land(cf, position):
 max_velocity = 0.2
 max_acceleration = 0.03
     
-def seek(self, positions, whichCF, target):
+def seek(self, positions, velocities, whichCF, target):
     
         my_pos=positions[whichCF]
         desired = target - my_pos
         desired = desired.normalized()
         desired *= max_velocity
-        steer = desired - self.velocity
+        steer = desired - velocities[whichCF]
         steer = steer.limited(self.max_acceleration)
         return steer
 
@@ -146,7 +146,7 @@ def seek(self, positions, whichCF, target):
 
 # Separation
 # Method checks for nearby boids and steers away
-def separate(positions, wichCF,):
+def separate(positions,velocities, wichCF,):
     desired_separation = 0.5
     steer = vec2(0, 0)
     count = 0
@@ -175,7 +175,7 @@ def separate(positions, wichCF,):
         # Implement Reynolds: Steering = Desired - Velocity
         steer = steer.normalized()
         steer *= max_velocity
-        steer -= self.velocity
+        steer -= velocities[wichCF]
         steer = steer.limited(max_acceleration)
 
     return steer
