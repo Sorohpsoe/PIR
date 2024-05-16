@@ -70,8 +70,8 @@ def start_distance_printing(scf):
 
 
 uris = [
-    'radio://0/80/2M/9',
-    'radio://0/80/2M/2',
+    'radio://0/80/2M/7',
+    'radio://0/80/2M/1',
 ]
 
 def is_in_box_limit(box_limits, positions, whichCF, v_0):
@@ -233,7 +233,6 @@ def cohesion(positions, whichCF, r_att, p_att):
         
     if interacting_units > 0:
         sum /= interacting_units
-        attraction_force = seek(sum)    
         
     attraction_force += ((distance - r_att) * p_att * (maths.unitVect(neighbor_pos_diff)))
 
@@ -255,7 +254,7 @@ def cohesion(positions, whichCF, r_att, p_att):
     return attraction_force
 
 
-def run_sequence(scf, sequence):
+def run_sequence(scf):
     try:
         cf = scf.cf
         start_distance_printing(scf)
@@ -268,7 +267,6 @@ def run_sequence(scf, sequence):
         v_0 = 0.3
 
         print(scf.cf.link_uri)
-        print(sequence)
 
 
         if scf.cf.link_uri == uris[0]:   
@@ -299,7 +297,7 @@ def run_sequence(scf, sequence):
                 r_att=1.5
                 p_att=0.5
                 
-                r_rep=0.4
+                r_rep=0.6
                 p_rep=0.8
                 
                 
@@ -310,11 +308,14 @@ def run_sequence(scf, sequence):
                 
                 att = cohesion(pos_dict, scf.cf.link_uri, r_att,p_att)
                 rep = separate(pos_dict, scf.cf.link_uri, r_rep, p_rep)
-                spp = interactions.compute_self_propulsion(vel_dict, scf.cf.link_uri, v_0)
                 ali = align(pos_dict, vel_dict,scf.cf.link_uri,r_align, p_align)
 
-                force = (att + rep + ali)*coef_vitesse
+                print(f"att: {att}, rep: {rep}, ali: {ali}")
 
+                force = (att + rep + ali)*coef_vitesse
+                print(f"force: {force}")
+                
+                
                 cf.commander.send_velocity_world_setpoint(force[0], force[1], force[2], 0)
                 time.sleep(0.1)
 
