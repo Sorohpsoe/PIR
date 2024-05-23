@@ -30,11 +30,13 @@ uris = [
 #ID du drône leader (tous les autres sont followers)
 URI_Leader = 'radio://0/80/2M/3'
 
-
+#Création et initialisation des dictionnaires stockant uniquement la dernière position et vélocité
 for id in uris:
     pos_dict_list[id] = []
     vel_dict_list[id] = []
 
+
+#Fonctions permettant d'effectuer un lightcheck des drones
 def activate_led_bit_mask(scf):
     scf.cf.param.set_value('led.bitmask', 255)
 
@@ -47,6 +49,8 @@ def light_check(scf):
     deactivate_led_bit_mask(scf)
     time.sleep(0.5)
 
+
+#Fonction collectant les données de position et de vitesse
 def log_callback(uri, timestamp, data, logconf):
     x = data['stateEstimate.x']
     y = data['stateEstimate.y']
@@ -63,11 +67,10 @@ def log_callback(uri, timestamp, data, logconf):
     pos_dict_list[uri].append(pos)
     vel_dict_list[uri].append(vel)
     
-
     #print('uri: {} pos: ({}, {}, {})'.format(uri, x, y, z))
 
 
-
+#Fonction exportant les données de positions dans un fichier csv pour le traitement des données
 def save_to_csv(dictionnaire, filename):
     with open(filename, 'w', newline='') as csvfile:
         fieldnames = ['drone_id', 'x', 'y', 'z']
@@ -80,7 +83,7 @@ def save_to_csv(dictionnaire, filename):
 
 
 
-
+#Fonction initialisant un log
 def start_states_log(scf):
     log_conf = LogConfig(name='States', period_in_ms=10)
     log_conf.add_variable('stateEstimate.x', 'float')
@@ -96,8 +99,8 @@ def start_states_log(scf):
     log_conf.start()
 
 
+#Fonction définissant une zone de laquelle le drone ne peut pas sortir
 def is_in_box_limit(box_limits, positions, whichCF, v_0):
-
     x = positions[whichCF][0]
     y = positions[whichCF][1]
     z = positions[whichCF][2]
@@ -119,6 +122,8 @@ def is_in_box_limit(box_limits, positions, whichCF, v_0):
     
     return back_inside_dir
 
+
+#Fonction de décollage du drone
 def take_off(cf, height):
     take_off_time = 1.0
     sleep_time = 0.1
@@ -129,6 +134,7 @@ def take_off(cf, height):
         time.sleep(sleep_time)
 
 
+#Fonction d'atterrissage du drone
 def land(cf, position):
     print('landing...')
     landing_time = 4.0
@@ -144,6 +150,7 @@ def land(cf, position):
     time.sleep(0.1)
 
 
+#Fonction définissant la séquence de vol
 def fly_sequence(scf):
     try:
         cf = scf.cf
@@ -153,6 +160,7 @@ def fly_sequence(scf):
         #box_limits = [-0.75, 1.15, 2.0]
         v_0 = 0.3
 
+        #Séquence du leader
         if scf.cf.link_uri == URI_Leader:   
             with PositionHlCommander(cf, default_velocity=0.2, controller=PositionHlCommander.CONTROLLER_PID) as pc:
 
@@ -187,6 +195,7 @@ def fly_sequence(scf):
 
                 en_cours = False
 
+        #Séquence des followers
         else :
             take_off(cf, 0.5)
             while en_cours:
@@ -217,6 +226,7 @@ def fly_sequence(scf):
         print(e)
 
 
+#Lancement du code : connection, lightcheck, réinitialisation, lancement du log et vol
 if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
