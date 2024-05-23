@@ -21,10 +21,12 @@ from cflib.positioning.position_hl_commander import PositionHlCommander
 from cflib.utils import uri_helper
 import threading
 
-
+#Création des dictionnaires stockant uniquement la dernière position et vélocité (pour le flocking)
 pos_dict = {}
 vel_dict = {}
 
+
+#Fonction collectant les données de position et de vitesse
 def log_callback(uri, timestamp, data, logconf):
     x = data['stateEstimate.x']
     y = data['stateEstimate.y']
@@ -40,6 +42,7 @@ def log_callback(uri, timestamp, data, logconf):
     #print('uri: {} pos: ({}, {}, {})'.format(uri, x, y, z))
 
 
+#Fonction initialisant un log
 def start_states_log(scf):
     log_conf = LogConfig(name='States', period_in_ms=10)
     log_conf.add_variable('stateEstimate.x', 'float')
@@ -55,9 +58,8 @@ def start_states_log(scf):
     log_conf.start()
 
 
-
+#Fonction affichant les données de distance
 def start_distance_printing(scf):
-
     for i in pos_dict.keys():
         if i == scf.cf.link_uri: continue
         dist = maths.compute_distance(vel_dict[scf.cf.link_uri], vel_dict[i])
@@ -66,7 +68,7 @@ def start_distance_printing(scf):
     print("\n")
 
 
-
+#Liste des addresses des drônes utilisés pour la séquence
 uris = [
     'radio://0/80/2M/3',
     'radio://0/80/2M/A',
@@ -79,6 +81,8 @@ seq_args = {
     uris[2]: [1],
 }
 
+
+#Fonction définissant une zone de laquelle le drone ne peut pas sortir
 def is_in_box_limit(box_limits, positions, whichCF, v_0):
 
     x = positions[whichCF][0]
@@ -102,6 +106,8 @@ def is_in_box_limit(box_limits, positions, whichCF, v_0):
     
     return back_inside_dir
 
+
+#Fonction de décollage du drone
 def take_off(cf, height):
     take_off_time = 1.0
     sleep_time = 0.1
@@ -112,6 +118,7 @@ def take_off(cf, height):
         time.sleep(sleep_time)
 
 
+#Fonction d'atterrissage du drone
 def land(cf, position):
     print('landing...')
     landing_time = 4.0
@@ -127,6 +134,7 @@ def land(cf, position):
     time.sleep(0.1)
 
 
+#Fonction définissant la séquence de vol
 def run_sequence(scf, sequence):
     try:
         cf = scf.cf
@@ -142,7 +150,7 @@ def run_sequence(scf, sequence):
         print(scf.cf.link_uri)
         print(sequence)
 
-
+        #Séquence du leader
         if sequence == 0:   
             with PositionHlCommander(cf, default_velocity=0.2, controller=PositionHlCommander.CONTROLLER_PID) as pc:
 
@@ -161,6 +169,7 @@ def run_sequence(scf, sequence):
 
                 en_cours = False
 
+        #Séquence des followers
         else :
             take_off(cf, 0.5)
             while en_cours:
@@ -190,6 +199,7 @@ def run_sequence(scf, sequence):
         print(e)
 
 
+#Lancement du code : connection, réinitialisation, lancement du log et vol
 if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
