@@ -22,9 +22,11 @@ vel_dict = {}
 #Liste des addresses des drônes utilisés pour la séquence
 uris = [
     'radio://0/80/2M/3',
-    'radio://0/80/2M/6',
-    'radio://0/80/2M/7',
+    'radio://0/80/2M/1',
     'radio://0/80/2M/4',
+    'radio://0/80/2M/8',
+    'radio://0/80/2M/9',
+
 ]
 
 #ID du drône leader (tous les autres sont followers)
@@ -157,20 +159,20 @@ def fly_sequence(scf):
         if scf.cf.link_uri == URI_Leader:   
 
 
-            with PositionHlCommander(cf, default_height=0.5, default_velocity=0.15, controller=PositionHlCommander.CONTROLLER_PID) as pc:
+            with PositionHlCommander(cf, default_height=0.8, default_velocity=0.15, controller=PositionHlCommander.CONTROLLER_PID) as pc:
 
                 decollage = True
                 time.sleep(4)
 
                 
-                for i in [0]:
-                    pc.go_to(0.0,-0.5,0.5+i)
+                for i in [0.3]:
+                    pc.go_to(0.0,0.0,0.5+i)
 
-                    pc.go_to(1.0,-0.5,0.5+i)
+                    pc.go_to(2.0,0.0,0.5+i)
 
-                    pc.go_to(1.0,1.0,0.5+i)
+                    pc.go_to(2.0,1.15,0.5+i)
 
-                    pc.go_to(0.0,1.0,0.5+i)
+                    pc.go_to(0.0,1.15,0.5+i)
                 
 
             en_cours = False
@@ -188,7 +190,7 @@ def fly_sequence(scf):
             
             time.sleep(0.5)
 
-            take_off(cf, 0.5)
+            take_off(cf, 0.80)
             while en_cours:
 
                 #going_back = is_in_box_limit(box_limits, pos_dict, scf.cf.link_uri, v_0)
@@ -207,7 +209,13 @@ def fly_sequence(scf):
                     elif force[elem] < -0.20:
                         force[elem] = -0.20
 
-                
+                if pos_dict[scf.cf.link_uri][2] < 0.75:
+                    force[2] = 0.1
+                elif pos_dict[scf.cf.link_uri][2] > 0.85:
+                    force[2]=-0.1
+                else:
+                    force[2]=0.0
+                    
                 print(force)
 
                 cf.commander.send_velocity_world_setpoint(force[0], force[1], force[2], 0)
@@ -228,7 +236,7 @@ if __name__ == '__main__':
 
     cflib.crtp.init_drivers()
     factory = CachedCfFactory(rw_cache='./cache')
-
+    print('Connecting to Crazyflies...')
     with Swarm(uris, factory=factory) as swarm:
 
         print('Connected to  Crazyflies')
